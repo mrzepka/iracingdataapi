@@ -46,9 +46,21 @@ class irDataClient:
     def _build_url(self, endpoint):
         return self.base_url + endpoint
 
+    def _wait_for_timeout(self, response, url, payload):
+        ratelimit_reset = response.headers["x-ratelimit-reset"]
+        now = time.time()
+        time_to_wait = int(float(ratelimit_reset) - now) + 2
+        time.sleep(time_to_wait)
+        return self._get_resource_link(url, payload)
+
     def _get_resource_or_link(self, url, payload=None):
         r = self.session.get(url, params=payload)
         if r.status_code != 200:
+            if r.status_code == 429:
+               self._wait_for_timeout(r)
+               return _get_resource_link(url, payload)
+            else:
+                raise RuntimeError(r.json())
             raise RuntimeError(r.json())
         if "link" in r.json().keys():
             return [r.json()["link"], True]
@@ -63,6 +75,11 @@ class irDataClient:
             return resource_obj
         r = self.session.get(resource_obj)
         if r.status_code != 200:
+            if r.status_code == 429:
+               self._wait_for_timeout(r)
+               return _get_resource(endpoint, payload)
+            else:
+                raise RuntimeError(r.json())
             raise RuntimeError(r.json())
         return r.json()
 
