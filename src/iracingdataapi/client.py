@@ -52,7 +52,6 @@ class irDataClient:
         now = time.time()
         time_to_wait = int(float(ratelimit_reset) - now) + 2
         time.sleep(time_to_wait)
-        return self._get_resource_link(url, payload)
 
     def _get_resource_or_link(self, url, payload=None):
         r = self.session.get(url, params=payload)
